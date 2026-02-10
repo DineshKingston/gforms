@@ -32,6 +32,16 @@ wheels/
 # Django
 *.log
 local_settings.py
+staticfiles/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Deployment
+gunicorn.pid
+logs/
 
 # IDE
 .vscode/
@@ -39,3 +49,4 @@ local_settings.py
 *.swp
 *.swo
 *~
+

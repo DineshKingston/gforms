@@ -1,0 +1,43 @@
+name: Deploy to AWS Ubuntu VM
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to AWS VM
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USERNAME }}
+          key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd ${{ secrets.AWS_DEPLOY_PATH }}
+            
+            # Pull latest changes
+            echo "📥 Pulling latest code from GitHub..."
+            git pull origin main
+            
+            # Run deployment script
+            echo "🚀 Running deployment script..."
+            bash deploy.sh
+            
+      - name: Deployment Status
+        if: success()
+        run: echo "✅ Deployment completed successfully!"
+        
+      - name: Deployment Failed
+        if: failure()
+        run: |
+          echo "❌ Deployment failed!"
+          exit 1
