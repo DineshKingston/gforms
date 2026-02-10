@@ -42,8 +42,8 @@ fi
 
 # Restart Gunicorn service
 echo "🔄 Restarting Gunicorn service..."
-if systemctl is-active --quiet gunicorn-gforms; then
-    sudo systemctl restart gunicorn-gforms
+if systemctl is-active --quiet gunicorn; then
+    sudo systemctl restart gunicorn
     echo "✅ Gunicorn service restarted"
 elif [ -f gunicorn.pid ]; then
     # Alternative: kill and restart using PID file
@@ -51,7 +51,7 @@ elif [ -f gunicorn.pid ]; then
     echo "✅ Gunicorn reloaded"
 else
     echo "⚠️  Gunicorn service not found. You may need to start it manually:"
-    echo "   pipenv run gunicorn forms.wsgi:application --bind 0.0.0.0:8000 --workers 3 --daemon --pid gunicorn.pid"
+    echo "   sudo systemctl start gunicorn"
 fi
 
 # Check application health
