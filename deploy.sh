@@ -29,7 +29,7 @@ pipenv run python manage.py migrate --noinput
 
 # Collect static files
 echo "📂 Collecting static files..."
-pipenv run python manage.py collectstatic --noinput --clear
+pipenv run python manage.py collectstatic --noinput
 
 # Restart Docker services (PostgreSQL and Redis)
 echo "🐳 Restarting Docker services..."
