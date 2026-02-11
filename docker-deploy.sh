@@ -10,14 +10,16 @@ echo "=========================================="
 # Load environment variables if .env exists
 if [ -f .env ]; then
     echo "📋 Loading environment variables from .env"
-    export $(cat .env | grep -v '^#' | xargs)
+    set -a
+    source <(cat .env | grep -v '^#' | grep -v '^$' | sed 's/\r$//' | sed 's/[[:space:]]*$//')
+    set +a
 fi
 
-# Set default values if not provided
-ECR_REGISTRY=${ECR_REGISTRY:-""}
-ECR_REPOSITORY=${ECR_REPOSITORY:-"gforms"}
-DOCKER_IMAGE_TAG=${DOCKER_IMAGE_TAG:-"latest"}
-AWS_REGION=${AWS_REGION:-"ap-south-1"}
+# Trim whitespace from critical variables
+ECR_REGISTRY=$(echo "${ECR_REGISTRY:-}" | xargs)
+ECR_REPOSITORY=$(echo "${ECR_REPOSITORY:-gforms}" | xargs)
+DOCKER_IMAGE_TAG=$(echo "${DOCKER_IMAGE_TAG:-latest}" | xargs)
+AWS_REGION=$(echo "${AWS_REGION:-ap-south-1}" | xargs)
 
 # Check if ECR registry is set
 if [ -z "$ECR_REGISTRY" ]; then
