@@ -18,6 +18,8 @@ if [ -f .env ]; then
         # Remove any trailing whitespace/newlines
         key=$(echo "$key" | xargs)
         value=$(echo "$value" | sed 's/\r$//' | sed 's/[[:space:]]*$//')
+        # Skip if key is empty after trimming
+        [[ -z $key ]] && continue
         # Export the variable
         export "$key=$value"
     done < .env
