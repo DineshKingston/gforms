@@ -1,0 +1,107 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  postgresql:
+    image: postgres:16-alpine
+    container_name: gforms-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DEFAULT_DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DEFAULT_DB_PASSWORD:-postgres-password}
+      POSTGRES_DB: ${DEFAULT_DB_NAME:-gforms-db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DEFAULT_DB_USER:-postgres}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gforms-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: gforms-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gforms-network
+
+  # Django Application
+  django:
+    image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${DOCKER_IMAGE_TAG:-latest}
+    container_name: gforms-django
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DEFAULT_DB_HOST=postgresql
+      - DEFAULT_DB_PORT=5432
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    expose:
+      - "8000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - gforms-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: gforms-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+    depends_on:
+      - django
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - gforms-network
+
+networks:
+  gforms-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  static_volume:
+    driver: local
+  media_volume:
+    driver: local
