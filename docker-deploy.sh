@@ -10,12 +10,20 @@ echo "=========================================="
 # Load environment variables if .env exists
 if [ -f .env ]; then
     echo "📋 Loading environment variables from .env"
-    set -a
-    source <(cat .env | grep -v '^#' | grep -v '^$' | sed 's/\r$//' | sed 's/[[:space:]]*$//')
-    set +a
+    # Export variables while preserving special characters
+    while IFS='=' read -r key value; do
+        # Skip comments and empty lines
+        [[ $key =~ ^#.*$ ]] && continue
+        [[ -z $key ]] && continue
+        # Remove any trailing whitespace/newlines
+        key=$(echo "$key" | xargs)
+        value=$(echo "$value" | sed 's/\r$//' | sed 's/[[:space:]]*$//')
+        # Export the variable
+        export "$key=$value"
+    done < .env
 fi
 
-# Trim whitespace from critical variables
+# Trim whitespace from critical Docker variables
 ECR_REGISTRY=$(echo "${ECR_REGISTRY:-}" | xargs)
 ECR_REPOSITORY=$(echo "${ECR_REPOSITORY:-gforms}" | xargs)
 DOCKER_IMAGE_TAG=$(echo "${DOCKER_IMAGE_TAG:-latest}" | xargs)
