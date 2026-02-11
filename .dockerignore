@@ -1,0 +1,66 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+.eggs
+*.egg
+
+# Virtual environments
+env/
+venv/
+ENV/
+.venv
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Database
+db.sqlite3
+*.db
+
+# Docker
+docker-compose.yml
+docker-compose.prod.yml
+Dockerfile
+.dockerignore
+
+# Documentation
+*.md
+README*
+DEPLOYMENT*
+ARCHITECTURE*
+QUICKFIX*
+VM_SETUP*
+DOCKER_SETUP*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Static files (will be collected in container)
+staticfiles/
+
+# Development files
+gunicorn.pid
+deploy.sh
+docker-deploy.sh
+
+# CI/CD
+.github/

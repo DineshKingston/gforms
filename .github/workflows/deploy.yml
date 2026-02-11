@@ -1,4 +1,4 @@
-name: Deploy to AWS Ubuntu VM
+name: Deploy to AWS Ubuntu VM with Docker
 
 on:
   push:
@@ -6,35 +6,78 @@ on:
       - main
   workflow_dispatch:  # Allows manual triggering from GitHub UI
 
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to AWS VM
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build Docker image
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
+          # Push both tags to ECR
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Deploy to AWS EC2
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
         with:
           host: ${{ secrets.AWS_HOST }}
           username: ${{ secrets.AWS_USERNAME }}
           key: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
           port: 22
+          envs: ECR_REGISTRY,ECR_REPOSITORY,IMAGE_TAG
           script: |
             cd ${{ secrets.AWS_DEPLOY_PATH }}
             
-            # Pull latest changes
+            # Update .env with new image tag
+            sed -i "s|DOCKER_IMAGE_TAG=.*|DOCKER_IMAGE_TAG=latest|g" .env
+            sed -i "s|ECR_REGISTRY=.*|ECR_REGISTRY=${ECR_REGISTRY}|g" .env
+            sed -i "s|ECR_REPOSITORY=.*|ECR_REPOSITORY=${ECR_REPOSITORY}|g" .env
+            
+            # Pull latest code
             echo "📥 Pulling latest code from GitHub..."
             git pull origin main
             
-            # Run deployment script
-            echo "🚀 Running deployment script..."
-            bash deploy.sh
+            # Run Docker deployment script
+            echo "🐳 Running Docker deployment..."
+            bash docker-deploy.sh
             
       - name: Deployment Status
         if: success()
-        run: echo "✅ Deployment completed successfully!"
+        run: |
+          echo "✅ Deployment completed successfully!"
+          echo "🐳 Docker image: ${{ steps.build-image.outputs.image }}"
         
       - name: Deployment Failed
         if: failure()
