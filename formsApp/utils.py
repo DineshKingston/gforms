@@ -42,13 +42,12 @@ def upload_file_to_s3(file, form_id, field_name):
         file_extension = os.path.splitext(file.name)[1]
         s3_key = f'media/forms/{form_id}/{field_name}_{timestamp}{file_extension}'
         
-        # Upload file
+        # Upload file without ACL (use bucket policy for public access instead)
         s3_client.upload_fileobj(
             file,
             settings.AWS_STORAGE_BUCKET_NAME,
             s3_key,
             ExtraArgs={
-                'ACL': 'public-read',
                 'ContentType': file.content_type
             }
         )
