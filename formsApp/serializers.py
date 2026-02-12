@@ -7,7 +7,7 @@ class FormSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Form
-        fields = ['id', 'name', 'description', 'schema', 'created_by', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'description', 'schema', 'allow_excel_download', 'created_by', 'created_at', 'updated_at']
         read_only_fields = ['created_by', 'created_at', 'updated_at']
     
     def validate_schema(self, value):
@@ -20,12 +20,19 @@ class FormSerializer(serializers.ModelSerializer):
         if not isinstance(value['fields'], list):
             raise serializers.ValidationError("'fields' must be a list")
         
+        valid_field_types = ['text', 'email', 'number', 'textarea', 'select', 'checkbox', 'radio', 'date', 'file']
+        
         for field in value['fields']:
             if not isinstance(field, dict):
                 raise serializers.ValidationError("Each field must be a JSON object")
             
             if 'name' not in field or 'type' not in field:
                 raise serializers.ValidationError("Each field must have 'name' and 'type'")
+            
+            if field['type'] not in valid_field_types:
+                raise serializers.ValidationError(
+                    f"Invalid field type '{field['type']}'. Valid types are: {', '.join(valid_field_types)}"
+                )
             
             if 'required' not in field:
                 field['required'] = False

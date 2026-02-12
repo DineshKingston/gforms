@@ -66,21 +66,21 @@ jobs:
             sed -i "s|ECR_REPOSITORY=.*|ECR_REPOSITORY=${ECR_REPOSITORY}|g" .env
             
             # Pull latest code
-            echo "📥 Pulling latest code from GitHub..."
+            echo "Pulling latest code from GitHub..."
             git pull origin main
             
             # Run Docker deployment script
-            echo "🐳 Running Docker deployment..."
+            echo "Running Docker deployment..."
             bash docker-deploy.sh
             
       - name: Deployment Status
         if: success()
         run: |
-          echo "✅ Deployment completed successfully!"
-          echo "🐳 Docker image: ${{ steps.build-image.outputs.image }}"
+          echo "Deployment completed successfully!"
+          echo "Docker image: ${{ steps.build-image.outputs.image }}"
         
       - name: Deployment Failed
         if: failure()
         run: |
-          echo "❌ Deployment failed!"
+          echo "Deployment failed!"
           exit 1

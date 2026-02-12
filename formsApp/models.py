@@ -6,6 +6,10 @@ class Form(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     schema = models.JSONField(default=dict, help_text="JSON schema defining form fields")
+    allow_excel_download = models.BooleanField(
+        default=True,
+        help_text="Allow admins to download form responses as Excel"
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
